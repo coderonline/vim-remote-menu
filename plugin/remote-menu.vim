@@ -1,20 +1,57 @@
-" vim: ft=vim:noai:ts=2:sw=2:sts=2:iskeyword+=\:,\!,\<,\>,\-,\&
-"
+" vim: set filetype=vim:noai:ts=2:sw=2:sts=2:iskeyword+=\:,\!,\<,\>,\-,\&
 
-function Refresh_server_list(sync_others)
-  silent! unmenu! UI
-  menu &UI.refresh\ menu
-        \ :call Refresh_server_list(1)<CR>
+let g:remote_menu_name = '&Remote'
 
-  menu &UI.-Sep1- :
+function! RemoteMenuSendTo(servername)
+  " switch to either a new and empty or the previous buffer
+  if len(getbufinfo({'buflisted':1})) == 1
+    new
+  else
+    bp
+  endif
 
-  for s in split(serverlist(), '\n')
-    if v:servername != s
-      execute ':menu &UI.&Open\ in\ '.s." :execute \":bd<Bar>:call remote_send('".s."', ':drop ' . expand('#:p')  . '\\<CR\\>')<Bar>:call remote_foreground('".s."')\"<CR>"
-      if a:sync_others
-        call remote_send(s, ":call Refresh_server_list(0)<CR>")
+  " close the previously left buffer (alternate)
+  bd #
+
+  call remote_send(a:servername, ':drop '.expand('#:p').'<CR>')
+  call remote_foreground(a:servername)
+endfunction
+
+" this is a wrapper function with does just a little more then serverlist()
+function s:ServerList(ArgLead, CmdLine, CursorPos)
+  return sort(split(serverlist(), '\n'))
+endfunction
+
+function! RemoteMenuUpdate(announce, exception)
+
+  " first ensure, that each vim session is a server session (gvim does that by default)
+  if v:servername == ''
+    call remote_startserver('VIM_SERVER')
+  endif
+
+  " clear the menu and recreate it
+  silent! aunmenu g:remote_menu_name
+
+  for s in s:ServerList(0, 0, 0)
+    if s != v:servername && s != a:exception
+
+      " local vim session: add menu entry
+      execute ':menu '.g:remote_menu_name.'.&Send\ to\ '.s.' '
+            \ ":execute \":bp<Bar>bd #"
+            \ "<Bar>:call remote_send('".s."', ':drop ' . expand('#:p') . '\\<CR\\>')
+            \ <Bar>:call remote_foreground('".s."')\"<CR>"
+
+      if a:announce == 1
+        " inform other server to execute this function and refresh their menus
+        call remote_send(s, ":call RemoteMenuUpdate(0, '".a:exception."')<CR>")
       endif
+
     endif
   endfor
+
 endfunction
-autocmd! VimEnter,VimLeave * call Refresh_server_list(1)
+
+autocmd! VimEnter * call RemoteMenuUpdate(1, '')
+autocmd! VimLeave * call RemoteMenuUpdate(1, v:servername)
+
+command -complete=customlist,s:ServerList -nargs=1 RemoteMenuSendTo :call RemoteMenuSendTo("<args>")
