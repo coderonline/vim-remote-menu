@@ -45,7 +45,8 @@ if has('clientserver')
 
           if a:announce == 1
             " inform other server to execute this function and refresh their menus
-            call remote_send(s, ":call RemoteMenuUpdate(0, '".a:exception."')<CR>")
+            call remote_send(s, "<C-\\><C-n>:call RemoteMenuUpdate(0, '".a:exception."')<CR>")
+
           endif
 
         endif
