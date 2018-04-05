@@ -54,8 +54,8 @@ if has('clientserver')
 
     endfunction
 
-    autocmd! VimEnter * call RemoteMenuUpdate(1, '')
-    autocmd! VimLeave * call RemoteMenuUpdate(1, v:servername)
+    autocmd VimEnter * call RemoteMenuUpdate(1, '')
+    autocmd VimLeave * call RemoteMenuUpdate(1, v:servername)
 
     command -complete=customlist,s:ServerList -nargs=1 RemoteMenuSendTo :call RemoteMenuSendTo("<args>")
 endif
