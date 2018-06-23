@@ -28,7 +28,7 @@ if has('clientserver')
 
       " first ensure, that each vim session is a server session (gvim does that by default)
       if v:servername == ''
-        call remote_startserver('VIM')
+        silent! call remote_startserver('VIM')
       endif
 
       " clear the menu and recreate it
